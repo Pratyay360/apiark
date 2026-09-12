@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@main
 
-      - uses: pnpm/action-setup@main
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
 

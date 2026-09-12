@@ -1,18 +1,15 @@
 name: flatpak
 
 on:
-  # Build (and smoke-test) every change to main and every PR.
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
-  # Attach the bundle to the release once the release workflow publishes it.
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
   contents: write
+  id-token: write
+  packages: write
+  actions: write
 
 jobs:
   build-flatpak:
@@ -23,29 +20,34 @@ jobs:
       options: --privileged
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@main
+        with:
+          submodules: recursive
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb # v6.7
         with:
           bundle: apiark_x86_64.flatpak
           manifest-path: flatpak/dev.apiark.app.yml
           branch: stable
+          cache-key: apiark-flatpak-${{ github.sha }}
           arch: x86_64
-          upload-artifact: false
           verbose: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
 
       - name: Upload flatpak bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: flatpak-x86_64
           path: apiark_x86_64.flatpak
-          retention-days: 14
 
       - name: Attach flatpak to release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@master
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          make_latest: true
           files: apiark_x86_64.flatpak
           fail_on_unmatched_files: true
         env:
